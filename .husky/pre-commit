@@ -1,0 +1,8 @@
+echo "Running tests..."
+npm test || exit 1
+
+echo "Running ESLint..."
+npm run lint || exit 1
+
+echo "Checking Prettier formatting..."
+npm run format:check || exit 1

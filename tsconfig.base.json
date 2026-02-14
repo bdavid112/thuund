@@ -13,6 +13,13 @@
     "skipLibCheck": true,
     "incremental": true,
     "composite": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@thuund/core/*": ["packages/thuund-core/src/*"],
+      "@thuund/ui/*": ["packages/thuund-ui/src/*"],
+      "@thuund/logic/*": ["packages/thuund-logic/src/*"]
+    }
   }
 }
