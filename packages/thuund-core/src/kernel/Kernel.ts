@@ -1,5 +1,4 @@
-import type { UIAdapter } from '../contracts/UIAdapter'
-import type { LogicAdapter } from '../contracts/LogicAdapter'
+import type { UIAdapter, LogicAdapter } from '@thuund/core'
 
 export interface KernelOptions {
   ui: UIAdapter

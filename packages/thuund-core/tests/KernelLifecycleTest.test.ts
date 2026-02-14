@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createKernel } from '../../src/kernel/Kernel'
+import { createKernel } from '@thuund/core'
 
 describe('Kernel lifecycle', () => {
   it('calls mount on UIAdapter when started', () => {
