@@ -1,0 +1,25 @@
+{
+  "name": "@thuund/ui",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@thuund/logic": "^0.1.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "eslint": "^8.50.0"
+  }
+}

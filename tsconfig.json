@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/thuund-core" },
+    { "path": "./packages/thuund-cli" },
+    { "path": "./packages/thuund-logic" },
+    { "path": "./packages/thuund-ui" }
+  ]
+}

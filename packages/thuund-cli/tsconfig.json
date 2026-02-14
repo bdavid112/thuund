@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../thuund-core" },
+    { "path": "../thuund-ui" },
+    { "path": "../thuund-logic" }
+  ],
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
