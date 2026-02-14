@@ -1,4 +1,4 @@
-import { UIAdapter, LogicAdapter, KernelError, Logger, KernelLogger } from '@thuund/core'
+import { UIAdapter, LogicAdapter, KernelError, Logger } from '@thuund/core'
 
 export interface KernelOptions {
   ui: UIAdapter
