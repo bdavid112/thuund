@@ -1,3 +1,3 @@
 export const helloThuund = () => {
-  console.log("Thuund Core is working!");
-};
+  console.log('Thuund Core is working!')
+}

@@ -1,6 +1,6 @@
-import { helloThuund } from "@thuund/core";
+import { helloThuund } from '@thuund/core'
 
 export const testLogic = () => {
-  helloThuund();
-  console.log("Logic package works too!");
-};
+  helloThuund()
+  console.log('Logic package works too!')
+}
