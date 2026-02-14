@@ -1,26 +1,29 @@
-import { UIAdapter, LogicAdapter, KernelError } from '@thuund/core'
+import { UIAdapter, LogicAdapter, KernelError, Logger, KernelLogger } from '@thuund/core'
 
 export interface KernelOptions {
   ui: UIAdapter
   logic: LogicAdapter
+  logger?: Logger
 }
 
 export function createKernel(options: KernelOptions) {
-  const { ui, logic } = options
+  const { ui, logic, logger } = options
 
   return {
     start() {
       try {
         logic.init?.()
+        logger?.info('LogicAdapter initialized')
       } catch (err) {
-        console.error('[Kernel] LogicAdapter init failed:', err)
+        logger?.error('LogicAdapter init failed', err)
         throw new KernelError('Failed to initialize logic adapter', err)
       }
 
       try {
         ui.mount?.(null)
+        logger?.info('UIAdapter mounted')
       } catch (err) {
-        console.error('[Kernel] UIAdapter mount failed:', err)
+        logger?.error('UIAdapter mount failed', err)
         throw new KernelError('Failed to mount UI adapter', err)
       }
     },
@@ -28,15 +31,17 @@ export function createKernel(options: KernelOptions) {
     stop() {
       try {
         ui.unmount?.()
+        logger?.info('UIAdapter unmounted')
       } catch (err) {
-        console.error('[Kernel] UIAdapter unmount failed:', err)
+        logger?.error('UIAdapter unmount failed', err)
         throw new KernelError('Failed to unmount UI adapter', err)
       }
 
       try {
         logic.dispose?.()
+        logger?.info('LogicAdapter disposed')
       } catch (err) {
-        console.error('[Kernel] LogicAdapter dispose failed:', err)
+        logger?.error('LogicAdapter dispose failed', err)
         throw new KernelError('Failed to dispose logic adapter', err)
       }
     },
