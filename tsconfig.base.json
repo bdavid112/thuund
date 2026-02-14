@@ -13,6 +13,7 @@
     "skipLibCheck": true,
     "incremental": true,
     "composite": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["vitest/globals"]
   }
 }
