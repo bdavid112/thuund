@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { Kernel, KernelError } from '@thuund/core'
 
 describe('Kernel error handling', () => {
-  it('wraps errors from UIAdapter mount', () => {
+  it('wraps errors from UIAdapter mount', async () => {
     const kernel = new Kernel({
       ui: {
         mount: async () => {
@@ -17,7 +17,7 @@ describe('Kernel error handling', () => {
       },
     })
 
-    expect(() => kernel.start()).rejects.toThrow(KernelError)
+    await expect(() => kernel.start()).rejects.toThrow(KernelError)
   })
 
   it('wraps errors from LogicAdapter dispose', async () => {
@@ -37,6 +37,6 @@ describe('Kernel error handling', () => {
 
     await kernel.start()
 
-    expect(() => kernel.stop()).rejects.toThrow(KernelError)
+    await expect(() => kernel.stop()).rejects.toThrow(KernelError)
   })
 })
