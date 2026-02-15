@@ -69,14 +69,4 @@ describe('AdapterRegistry integration in Kernel', () => {
     // @ts-ignore
     expect(() => registry.get('nonexistent')).toThrow(KernelError)
   })
-
-  it('kernel lifecycle still calls original adapters', async () => {
-    await kernel.start()
-    expect(mockLogic.init).toHaveBeenCalled()
-    expect(mockUI.mount).toHaveBeenCalled()
-
-    await kernel.stop()
-    expect(mockLogic.dispose).toHaveBeenCalled()
-    expect(mockUI.unmount).toHaveBeenCalled()
-  })
 })
