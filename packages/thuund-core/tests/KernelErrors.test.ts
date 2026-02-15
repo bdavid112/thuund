@@ -1,33 +1,42 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createKernel, KernelError } from '@thuund/core'
+import { Kernel, KernelError } from '@thuund/core'
 
 describe('Kernel error handling', () => {
   it('wraps errors from UIAdapter mount', () => {
-    const kernel = createKernel({
+    const kernel = new Kernel({
       ui: {
-        mount: () => {
-          throw new Error('ui fail')
+        mount: async () => {
+          throw new Error('Mount error')
         },
-        unmount: vi.fn(),
-        update: vi.fn(),
+        unmount: async () => vi.fn(),
+        update: () => {},
       },
-      logic: { init: vi.fn(), dispose: vi.fn() },
+      logic: {
+        init: async () => vi.fn(),
+        dispose: async () => vi.fn(),
+      },
     })
 
-    expect(() => kernel.start()).toThrow(KernelError)
+    expect(() => kernel.start()).rejects.toThrow(KernelError)
   })
 
-  it('wraps errors from LogicAdapter init', () => {
-    const kernel = createKernel({
-      ui: { mount: vi.fn(), unmount: vi.fn(), update: vi.fn() },
+  it('wraps errors from LogicAdapter dispose', async () => {
+    const kernel = new Kernel({
+      ui: {
+        mount: async () => vi.fn(),
+        unmount: async () => vi.fn(),
+        update: () => {},
+      },
       logic: {
-        init: () => {
-          throw new Error('logic fail')
+        init: async () => vi.fn(),
+        dispose: async () => {
+          throw new Error('Dispose error')
         },
-        dispose: vi.fn(),
       },
     })
 
-    expect(() => kernel.start()).toThrow(KernelError)
+    await kernel.start()
+
+    expect(() => kernel.stop()).rejects.toThrow(KernelError)
   })
 })

@@ -1,87 +1,85 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createKernel } from '@thuund/core'
+import { Kernel } from '@thuund/core'
 
 describe('Kernel lifecycle', () => {
-  it('calls mount on UIAdapter when started', () => {
+  it('calls mount on UIAdapter when started', async () => {
     const mountMock = vi.fn()
 
-    const kernel = createKernel({
+    const kernel = new Kernel({
       ui: {
         mount: mountMock,
         unmount: vi.fn(),
-        update: vi.fn(),
+        update: () => {},
       },
       logic: {
-        init: vi.fn(),
-        dispose: vi.fn(),
+        init: async () => {},
+        dispose: async () => {},
       },
     })
 
-    kernel.start()
-    kernel.stop()
+    await kernel.start()
 
     expect(mountMock).toHaveBeenCalled()
   })
 
-  it('calls init on LogicAdapter when started', () => {
+  it('calls init on LogicAdapter when started', async () => {
     const initMock = vi.fn()
 
-    const kernel = createKernel({
+    const kernel = new Kernel({
       ui: {
         mount: vi.fn(),
         unmount: vi.fn(),
-        update: vi.fn(),
+        update: () => {},
       },
       logic: {
         init: initMock,
-        dispose: vi.fn(),
+        dispose: async () => {},
       },
     })
 
-    kernel.start()
-    kernel.stop()
+    await kernel.start()
 
     expect(initMock).toHaveBeenCalled()
   })
 
-  it('calls unmount on UIAdapter when finished', () => {
+  it('calls unmount on UIAdapter when finished', async () => {
     const unmountMock = vi.fn()
 
-    const kernel = createKernel({
+    const kernel = new Kernel({
       ui: {
         mount: vi.fn(),
         unmount: unmountMock,
-        update: vi.fn(),
+        update: () => {},
       },
       logic: {
-        init: vi.fn(),
-        dispose: vi.fn(),
+        init: async () => vi.fn(),
+        dispose: async () => vi.fn(),
       },
     })
 
-    kernel.start()
-    kernel.stop()
+    await kernel.start()
+    await kernel.stop()
 
     expect(unmountMock).toHaveBeenCalled()
   })
 
-  it('calls dispose on LogicAdapter when finished', () => {
+  it('calls dispose on LogicAdapter when finished', async () => {
     const disposeMock = vi.fn()
 
-    const kernel = createKernel({
+    const kernel = new Kernel({
       ui: {
         mount: vi.fn(),
         unmount: vi.fn(),
-        update: vi.fn(),
+        update: () => {},
       },
       logic: {
-        init: vi.fn(),
+        init: async () => vi.fn(),
         dispose: disposeMock,
       },
     })
 
-    kernel.start()
-    kernel.stop()
+    await kernel.start()
+    await kernel.stop()
 
     expect(disposeMock).toHaveBeenCalled()
   })

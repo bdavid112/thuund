@@ -1,4 +1,4 @@
 export interface LogicAdapter {
-  init(): void
-  dispose(): void
+  init(): unknown | Promise<unknown>
+  dispose(): unknown | Promise<unknown>
 }
