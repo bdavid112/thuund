@@ -1,4 +1,12 @@
-import { UIAdapter, LogicAdapter, Logger, KernelError, LifecycleHooks } from '@thuund/core'
+import {
+  UIAdapter,
+  LogicAdapter,
+  Logger,
+  KernelError,
+  LifecycleHooks,
+  AdapterRegistry,
+  AdapterMap,
+} from '@thuund/core'
 import { Plugin } from '../plugins/Plugin'
 
 export interface KernelOptions {
@@ -9,33 +17,34 @@ export interface KernelOptions {
 }
 
 export class Kernel {
-  private ui: UIAdapter
-  private logic: LogicAdapter
   private logger?: Logger
   private hooks: LifecycleHooks
   private plugins: Plugin[]
+  private registry: AdapterRegistry
   private state: 'idle' | 'running' = 'idle'
 
   public Plugins = (): Plugin[] => {
     return this.plugins
   }
 
-  constructor(options: KernelOptions) {
-    this.ui = options.ui
-    this.logic = options.logic
+  public constructor(options: KernelOptions) {
     this.logger = options.logger
     this.hooks = options.hooks || {}
     this.plugins = []
+    this.registry = new AdapterRegistry({
+      ui: options.ui,
+      logic: options.logic,
+    })
   }
 
-  async start() {
+  public async start() {
     try {
       this.logger?.info('[KERNEL] Initialization started')
 
       await this.hooks.beforeStart?.()
 
-      await this.logic.init?.()
-      await this.ui.mount?.(null)
+      await this.getAdapter('logic').init?.()
+      await this.getAdapter('ui').mount?.(null)
       await this.initPlugins()
 
       await this.hooks.afterStart?.()
@@ -49,15 +58,15 @@ export class Kernel {
     }
   }
 
-  async stop() {
+  public async stop() {
     try {
       this.logger?.info('[KERNEL] Kernel stopping')
 
       await this.hooks.beforeStop?.()
 
       await this.disposePlugins()
-      await this.ui.unmount?.()
-      await this.logic.dispose?.()
+      await this.getAdapter('ui').unmount?.()
+      await this.getAdapter('logic').dispose?.()
 
       await this.hooks.afterStop?.()
       this.state = 'idle'
@@ -70,7 +79,7 @@ export class Kernel {
     }
   }
 
-  registerPlugin(plugin: Plugin) {
+  public registerPlugin(plugin: Plugin) {
     if (this.state !== 'idle') {
       const error = new KernelError(`Cannot register plugin after kernel started`)
       this.logger?.error('[KERNEL] Plugin registration failed', error)
@@ -82,7 +91,7 @@ export class Kernel {
     this.logger?.info(`[KERNEL] Plugin ${plugin.name} registered successfully`)
   }
 
-  deregisterPlugin(plugin: Plugin) {
+  public deregisterPlugin(plugin: Plugin) {
     if (this.state !== 'idle') {
       const error = new KernelError(`Cannot deregister plugin after kernel started`)
       this.logger?.error('[KERNEL] Plugin deregistration failed', error)
@@ -92,6 +101,15 @@ export class Kernel {
     this.logger?.info(`[KERNEL] Deregistering plugin: ${plugin.name}`)
     this.plugins = this.plugins.filter((p) => p.name != plugin.name)
     this.logger?.info(`[KERNEL] Plugin ${plugin.name} registered successfully`)
+  }
+
+  public getAdapter<K extends keyof AdapterMap>(key: K) {
+    return this.registry.get(key)
+  }
+
+  public setAdapter<K extends keyof AdapterMap>(key: K, adapter: AdapterMap[K]) {
+    if (this.state != 'idle') throw new KernelError('[KERNEL] Can not set adapter while running')
+    this.registry.set(key, adapter)
   }
 
   private async initPlugins() {

@@ -13,3 +13,7 @@ export * from './logger/KernelLogger'
 
 /* Plugins */
 export * from './plugins/Plugin'
+
+/* Adapter Registry */
+export * from './adapter-registry/AdapterMap'
+export * from './adapter-registry/AdapterRegistry'
