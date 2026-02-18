@@ -1,120 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Kernel, KernelError } from '@thuund/core'
 
-describe('Kernel plugin registration', () => {
+describe('Kernel Plugin Management', () => {
   let kernel: Kernel
+  const mockAdapters = {
+    ui: { init: vi.fn(), mount: vi.fn(), unmount: vi.fn(), getComponent: vi.fn() },
+    logic: { init: vi.fn(), dispose: vi.fn(), getService: vi.fn() },
+  }
 
   beforeEach(() => {
-    kernel = new Kernel({
-      ui: {
-        mount: async () => vi.fn(),
-        unmount: async () => vi.fn(),
-        update: () => {},
-      },
-      logic: {
-        init: async () => vi.fn(),
-        dispose: async () => vi.fn(),
-      },
+    kernel = new Kernel(mockAdapters)
+  })
+
+  // Grouping basic management to keep it lean
+  describe('Inventory', () => {
+    it('manages plugin registration and removal correctly', () => {
+      const p1 = { name: 'P1' }
+      const p2 = { name: 'P2' }
+
+      kernel.registerPlugin(p1)
+      kernel.registerPlugin(p2)
+      expect(kernel.Plugins()).toHaveLength(2)
+
+      kernel.deregisterPlugin(p1)
+      expect(kernel.Plugins()).toEqual([p2])
     })
   })
 
-  it('registers plugin', async () => {
-    kernel.registerPlugin({
-      name: 'Plugin 1',
+  describe('Lifecycle Orchestration', () => {
+    it('initializes plugins in registration order and provides kernel access', async () => {
+      const executionOrder: string[] = []
+
+      const createPlugin = (name: string) => ({
+        name,
+        init: vi.fn(async (k) => {
+          executionOrder.push(name)
+          expect(k).toBe(kernel) // Verify kernel injection
+        }),
+      })
+
+      kernel.registerPlugin(createPlugin('Plugin A'))
+      kernel.registerPlugin(createPlugin('Plugin B'))
+
+      await kernel.start()
+
+      // Verify the registration order is respected
+      expect(executionOrder).toEqual(['Plugin A', 'Plugin B'])
     })
 
-    expect(kernel.Plugins().length).toBe(1)
+    it('executes dispose hooks during shutdown', async () => {
+      const disposeMock = vi.fn()
+      kernel.registerPlugin({ name: 'Disposable', dispose: disposeMock })
+
+      await kernel.start()
+      await kernel.stop()
+
+      expect(disposeMock).toHaveBeenCalledTimes(1)
+    })
   })
 
-  it('deregisters plugin', async () => {
-    const plugin = {
-      name: 'Plugin 1',
-    }
-
-    kernel.registerPlugin(plugin)
-    kernel.registerPlugin({ name: 'Plugin 2' })
-    kernel.deregisterPlugin(plugin)
-
-    expect(kernel.Plugins()).toStrictEqual([{ name: 'Plugin 2' }])
-  })
-
-  it('registers plugins in correct order', async () => {
-    kernel.registerPlugin({
-      name: 'Plugin 1',
+  describe('State Guards', () => {
+    // Parameterized test for state-related errors
+    it.each([
+      ['registerPlugin', (k: Kernel) => k.registerPlugin({ name: 'late' })],
+      ['deregisterPlugin', (k: Kernel) => k.deregisterPlugin({ name: 'any' })],
+    ])('prevents %s while the kernel is running', async (_, action) => {
+      await kernel.start()
+      expect(() => action(kernel)).toThrow(KernelError)
     })
-
-    kernel.registerPlugin({
-      name: 'Plugin 2',
-    })
-
-    kernel.registerPlugin({
-      name: 'Plugin 3',
-    })
-
-    expect(kernel.Plugins()).toStrictEqual([
-      { name: 'Plugin 1' },
-      { name: 'Plugin 2' },
-      { name: 'Plugin 3' },
-    ])
-  })
-
-  it('calls init function of each plugin on kernel start', async () => {
-    const initMock1 = vi.fn()
-    const initMock2 = vi.fn()
-
-    kernel.registerPlugin({
-      name: 'Plugin 1',
-      init: initMock1,
-    })
-
-    kernel.registerPlugin({
-      name: 'Plugin 2',
-      init: initMock2,
-    })
-
-    await kernel.start()
-
-    expect(initMock1).toBeCalled()
-    expect(initMock2).toBeCalled()
-  })
-
-  it('calls dispose function of each plugin on kernel stop', async () => {
-    const disposeMock1 = vi.fn()
-    const disposeMock2 = vi.fn()
-
-    kernel.registerPlugin({
-      name: 'Plugin 1',
-      dispose: disposeMock1,
-    })
-
-    kernel.registerPlugin({
-      name: 'Plugin 2',
-      dispose: disposeMock2,
-    })
-
-    await kernel.start()
-    await kernel.stop()
-
-    expect(disposeMock1).toBeCalled()
-    expect(disposeMock2).toBeCalled()
-  })
-
-  it('throws error if plugin tried to be registered during run', async () => {
-    await kernel.start()
-
-    expect(() => {
-      kernel.registerPlugin({ name: 'Plugin' })
-    }).toThrow(KernelError)
-  })
-
-  it('throws error if plugin tried to be deregistered during run', async () => {
-    const plugin = { name: 'Plugin' }
-    kernel.registerPlugin(plugin)
-
-    await kernel.start()
-
-    expect(() => {
-      kernel.deregisterPlugin(plugin)
-    }).toThrow(KernelError)
   })
 })

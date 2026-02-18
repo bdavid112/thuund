@@ -38,29 +38,33 @@ export class Kernel {
   }
 
   public async start() {
+    if (this.state != 'idle') throw new KernelError('An instance is already running')
     try {
-      this.logger?.info('[KERNEL] Initialization started')
-
+      this.logger?.info('[KERNEL] Starting...')
       await this.hooks.beforeStart?.()
 
-      await this.getAdapter('logic').init?.()
-      await this.getAdapter('ui').mount?.(null)
+      /* Init */
+      await this.getAdapter('logic').init()
       await this.initPlugins()
+      await this.getAdapter('ui').init(null)
+
+      /* UI mount */
+      await this.getAdapter('ui').mount(null)
 
       await this.hooks.afterStart?.()
       this.state = 'running'
 
-      this.logger?.info('[KERNEL] Initialization successful')
+      this.logger?.info('[KERNEL] Bootstrapped successfully')
     } catch (err) {
       await this.hooks.onError?.(err)
-      this.logger?.error('[KERNEL] Initialization failed', err)
-      throw new KernelError('An error occured while initializing')
+      this.logger?.error('[KERNEL] Boot failure', err)
+      throw new KernelError('Failed to start Thuund')
     }
   }
 
   public async stop() {
     try {
-      this.logger?.info('[KERNEL] Kernel stopping')
+      this.logger?.info('[KERNEL] Stopping...')
 
       await this.hooks.beforeStop?.()
 
@@ -71,11 +75,11 @@ export class Kernel {
       await this.hooks.afterStop?.()
       this.state = 'idle'
 
-      this.logger?.info('[KERNEL] Kernel stopped gracefully')
+      this.logger?.info('[KERNEL] Stopped gracefully')
     } catch (err) {
       await this.hooks.onError?.(err)
-      this.logger?.error('[KERNEL] Kernel could not stop gracefully')
-      throw new KernelError('An error occured')
+      this.logger?.error('[KERNEL] Shutdown failure')
+      throw new KernelError('Failed to gracefully stop Thuund')
     }
   }
 

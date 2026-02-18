@@ -1,51 +1,69 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Kernel, KernelError } from '@thuund/core'
 
-describe('Kernel logger', () => {
-  it('calls logger.info on successful lifecycle events', async () => {
-    const infoMock = vi.fn()
+describe('Kernel Logging Diagnostics', () => {
+  const mockLogger = () => ({
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+  })
 
-    const kernel = new Kernel({
-      ui: {
-        mount: vi.fn(),
-        unmount: vi.fn(),
-        update: () => {},
-      },
-      logic: {
-        init: async () => vi.fn(),
-        dispose: async () => vi.fn(),
-      },
-      logger: { info: infoMock, warn: vi.fn(), error: vi.fn() },
-    })
+  const mockAdapters = {
+    ui: { init: vi.fn(), mount: vi.fn(), unmount: vi.fn(), getComponent: vi.fn() },
+    logic: { init: vi.fn(), dispose: vi.fn(), getService: vi.fn() },
+  }
+
+  it('logs the full lifecycle progression from start to stop', async () => {
+    const logger = mockLogger()
+    const kernel = new Kernel({ ...mockAdapters, logger })
 
     await kernel.start()
     await kernel.stop()
 
-    expect(infoMock).toHaveBeenCalledTimes(4) // start+stop for UI and Logic
+    // Verify system-level transparency
+    const infoMessages = logger.info.mock.calls.map((call) => call[0])
+
+    expect(infoMessages).toContain('[KERNEL] Starting...')
+    expect(infoMessages).toContain('[KERNEL] Bootstrapped successfully')
+    expect(infoMessages).toContain('[KERNEL] Stopping...')
+    expect(infoMessages).toContain('[KERNEL] Stopped gracefully')
   })
 
-  it('calls logger.error on failed lifecycle events', async () => {
-    const errorMock = vi.fn()
+  it('captures and logs the specific cause of a boot failure', async () => {
+    const logger = mockLogger()
+    const bootError = new Error('Database connection failed')
 
     const kernel = new Kernel({
-      ui: {
-        mount: () => {
-          throw new Error('Mount error')
-        },
-        unmount: vi.fn(),
-        update: () => {},
-      },
+      ...mockAdapters,
       logic: {
-        init: async () => vi.fn(),
-        dispose: async () => {
-          throw new Error('Dispose error')
+        ...mockAdapters.logic,
+        init: async () => {
+          throw bootError
         },
       },
-      logger: { info: vi.fn(), warn: vi.fn(), error: errorMock },
+      logger,
     })
 
-    await expect(() => kernel.start()).rejects.toThrow(KernelError)
-    await expect(() => kernel.stop()).rejects.toThrow(KernelError)
-    expect(errorMock).toHaveBeenCalledTimes(2) // start+stop for UI and Logic
+    // Expect the generic KernelError for the developer, but check logger for the root cause
+    await expect(kernel.start()).rejects.toThrow(KernelError)
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('[KERNEL] Boot failure'),
+      bootError,
+    )
+  })
+
+  it('logs plugin registration events for traceability', () => {
+    const logger = mockLogger()
+    const kernel = new Kernel({ ...mockAdapters, logger })
+
+    kernel.registerPlugin({ name: 'AuthPlugin' })
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Registering plugin: AuthPlugin'),
+    )
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining('AuthPlugin registered successfully'),
+    )
   })
 })

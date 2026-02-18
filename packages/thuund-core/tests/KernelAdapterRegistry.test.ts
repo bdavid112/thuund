@@ -8,9 +8,9 @@ describe('AdapterRegistry integration in Kernel', () => {
 
   beforeEach(() => {
     mockUI = {
+      init: vi.fn(async () => {}),
       mount: vi.fn(async () => {}),
       unmount: vi.fn(async () => {}),
-      update: vi.fn(),
     }
 
     mockLogic = {
@@ -34,9 +34,9 @@ describe('AdapterRegistry integration in Kernel', () => {
 
   it('allows replacing adapters while kernel is idle', () => {
     const newUI: UIAdapter = {
+      init: vi.fn(async () => {}),
       mount: vi.fn(async () => {}),
       unmount: vi.fn(async () => {}),
-      update: vi.fn(),
     }
 
     const newLogic: LogicAdapter = {
@@ -55,9 +55,9 @@ describe('AdapterRegistry integration in Kernel', () => {
     await kernel.start()
 
     const newUI: UIAdapter = {
+      init: vi.fn(async () => {}),
       mount: vi.fn(async () => {}),
       unmount: vi.fn(async () => {}),
-      update: vi.fn(),
     }
 
     expect(() => kernel.setAdapter('ui', newUI)).toThrow(KernelError)

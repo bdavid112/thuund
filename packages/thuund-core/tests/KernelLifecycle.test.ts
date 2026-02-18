@@ -1,86 +1,109 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Kernel } from '@thuund/core'
 
-describe('Kernel lifecycle', () => {
-  it('calls mount on UIAdapter when started', async () => {
-    const mountMock = vi.fn()
+describe('Kernel lifecycle orchestration', () => {
+  it('follows the strict startup sequence: Logic -> Plugins -> UI', async () => {
+    const sequence: string[] = []
+
+    const logicMock = {
+      init: vi.fn(async () => {
+        sequence.push('logic-init')
+      }),
+      dispose: vi.fn(),
+    }
+
+    const uiMock = {
+      init: vi.fn(async () => {
+        sequence.push('ui-init')
+      }),
+      mount: vi.fn(async () => {
+        sequence.push('ui-mount')
+      }),
+      unmount: vi.fn(),
+    }
 
     const kernel = new Kernel({
-      ui: {
-        mount: mountMock,
-        unmount: vi.fn(),
-        update: () => {},
-      },
-      logic: {
-        init: async () => {},
-        dispose: async () => {},
+      ui: uiMock,
+      logic: logicMock,
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }, // Mock logger to avoid console spam
+    })
+
+    // Mock a plugin to check its position in the sequence
+    kernel.registerPlugin({
+      name: 'test-plugin',
+      init: async () => {
+        sequence.push('plugin-init')
       },
     })
 
     await kernel.start()
 
-    expect(mountMock).toHaveBeenCalled()
+    // Verify the "Fullstack Symmetry" boot order
+    expect(sequence).toEqual(['logic-init', 'plugin-init', 'ui-init', 'ui-mount'])
   })
 
-  it('calls init on LogicAdapter when started', async () => {
-    const initMock = vi.fn()
+  it('provides the Kernel instance to plugins during init', async () => {
+    let capturedKernel = null
 
     const kernel = new Kernel({
-      ui: {
-        mount: vi.fn(),
-        unmount: vi.fn(),
-        update: () => {},
-      },
-      logic: {
-        init: initMock,
-        dispose: async () => {},
+      ui: { init: vi.fn(), mount: vi.fn(), unmount: vi.fn() },
+      logic: { init: vi.fn(), dispose: vi.fn() },
+    })
+
+    kernel.registerPlugin({
+      name: 'context-checker',
+      init: async (k) => {
+        capturedKernel = k
       },
     })
 
     await kernel.start()
-
-    expect(initMock).toHaveBeenCalled()
+    expect(capturedKernel).toBe(kernel)
   })
 
-  it('calls unmount on UIAdapter when finished', async () => {
-    const unmountMock = vi.fn()
+  it('prevents plugin registration after the kernel has started', async () => {
+    const kernel = new Kernel({
+      ui: { init: vi.fn(), mount: vi.fn(), unmount: vi.fn() },
+      logic: { init: vi.fn(), dispose: vi.fn() },
+    })
+
+    await kernel.start()
+
+    expect(() => {
+      kernel.registerPlugin({ name: 'late-plugin' })
+    }).toThrow('Cannot register plugin after kernel started')
+  })
+
+  it('gracefully shuts down in reverse order', async () => {
+    const sequence: string[] = []
 
     const kernel = new Kernel({
       ui: {
+        init: vi.fn(),
         mount: vi.fn(),
-        unmount: unmountMock,
-        update: () => {},
+        unmount: vi.fn(async () => {
+          sequence.push('ui-unmount')
+        }),
       },
       logic: {
-        init: async () => vi.fn(),
-        dispose: async () => vi.fn(),
+        init: vi.fn(),
+        dispose: vi.fn(async () => {
+          sequence.push('logic-dispose')
+        }),
+      },
+    })
+
+    kernel.registerPlugin({
+      name: 'test-plugin',
+      dispose: async () => {
+        sequence.push('plugin-dispose')
       },
     })
 
     await kernel.start()
     await kernel.stop()
 
-    expect(unmountMock).toHaveBeenCalled()
-  })
-
-  it('calls dispose on LogicAdapter when finished', async () => {
-    const disposeMock = vi.fn()
-
-    const kernel = new Kernel({
-      ui: {
-        mount: vi.fn(),
-        unmount: vi.fn(),
-        update: () => {},
-      },
-      logic: {
-        init: async () => vi.fn(),
-        dispose: disposeMock,
-      },
-    })
-
-    await kernel.start()
-    await kernel.stop()
-
-    expect(disposeMock).toHaveBeenCalled()
+    // Plugins and UI should teardown before the core logic layer
+    expect(sequence).toEqual(['plugin-dispose', 'ui-unmount', 'logic-dispose'])
   })
 })
