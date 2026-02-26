@@ -41,9 +41,9 @@ Thuund uses a Registry Pattern. The kernel asks for a component by name, and the
 ```ts
 interface UIAdapter {
   init: (config: ThuundConfig) => Promise<void>
-  mount: (rootElement: HTMLElement) => void
-  unmount: () => void
-  getComponent: (name: string) => any
+  mount: (rootElement: HTMLElement) => Promise<void>
+  unmount: () => Promise<void>
+  getComponent: (name: string) => Promise<any>
 }
 ```
 
@@ -63,11 +63,13 @@ The Logic Adapter provides shared validation, API handling, and backend utilitie
 Logic adapters provide "Services" that plugins or UI components can consume.
 
 - Interface Example:
-  interface LogicAdapter {
-  init: (config: ThuundConfig) => Promise<void>;
-  registerService: (name: string, service: any) => void;
-  getService: (name: string) => any;
-  }
+
+```ts
+interface LogicAdapter {
+  init: (config: ThuundConfig) => Promise<void>
+  getService: (name: string) => Promise<any>
+}
+```
 
 ### Official Implementation: thuund-logic
 
